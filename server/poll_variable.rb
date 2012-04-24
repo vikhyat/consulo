@@ -1,3 +1,5 @@
+require_relative 'ping.rb'
+
 class PollVariable
   attr_accessor :interval
   
@@ -8,6 +10,10 @@ class PollVariable
   end
   
   def poll
-    2
+    if @oid == "status"
+      Ping.pingecho(@network_element.ip_address, interval) 
+    else
+      nil
+    end
   end
 end
