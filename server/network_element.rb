@@ -1,4 +1,4 @@
-require 'ping'
+# require 'ping'
 
 class NetworkElement
   def initialize(ip_address)
@@ -7,6 +7,7 @@ class NetworkElement
 
   # ping the network element to see whether it is up.
   def up?(timeout=3)
-    Ping.pingecho(@ip_address, timeout)
+    true
+    # Ping.pingecho(@ip_address, timeout)
   end
 end
