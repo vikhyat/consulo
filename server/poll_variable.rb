@@ -11,7 +11,7 @@ class PollVariable
   
   def poll
     if @oid == "status"
-      Ping.pingecho(@network_element.ip_address, interval) 
+      Ping.pingecho(@network_element.ip_address, @interval) 
     else
       nil
     end

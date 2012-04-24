@@ -1,18 +1,10 @@
-require 'timeout'
-require 'socket'
-
-class Ping 
-  def self.pingecho(host, timeout=5, service="echo")
-    begin
-      timeout(timeout) do
-        s = TCPSocket.new(host, service)
-        s.close
-      end
-    rescue Errno::ECONNREFUSED
+class Ping
+  def self.pingecho(host, timeout)
+    result = `ping -t #{timeout.to_i} -c 1 #{host}`
+    if $?.exitstatus == 0
       return true
-    rescue   Timeout::Error, StandardError 
-      return false 
+    else
+      return false
     end
-    return true
   end
 end

@@ -18,7 +18,7 @@ threads = []
 poll_variables.each do |pv|
   data[pv] = {}
   threads.push Thread.new {
-    5.times do
+    loop do
       data[pv][Time.now.to_i] = pv.poll
       sleep pv.interval
     end
@@ -26,5 +26,3 @@ poll_variables.each do |pv|
 end
 
 threads.each {|t| t.join }
-
-pp data
