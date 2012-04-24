@@ -1,4 +1,6 @@
 class PollVariable
+  attr_accessor :interval
+  
   def initialize(oid, network_element, interval)
     @oid = oid
     @network_element = network_element
@@ -6,6 +8,6 @@ class PollVariable
   end
   
   def poll
-    
+    2
   end
 end
