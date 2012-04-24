@@ -1,0 +1,31 @@
+In terms of functionality, the server is fairly limited. It only acts as an
+interface between the LDCs, the applications and the database. The server
+consists of two parts -- a front-end API and a backend worker. There may be any
+number of worker processes operating in parallel.
+
+The front end will respond to data queries directly, but operations such as
+adding a new OID, adding an LDC and removing an LDC will be added to a
+Beanstalk queue which will be asynchronously processed by the worker(s). There
+is no direct communication between the front-end and the workers, all message
+passing will be through the Beanstalk queue.
+
+The server is comprised of two components -- one which communicates with the
+applications and the other which deals with the LDCs. The side which deals with 
+the LDC does not need to talk to the application side. There will be times when
+the side that communicates with applications will need to communicate with the 
+LDC communication layer, for this it will pass messages to the other component using a Beanstalk queue. Data is indirectly passed between the two layers via common database. 
+
+The component facing the applications will provide a HTTP-based API. An HTTP
+API would be better than one over ZeroMQ because a HTTP API will simplify 
+the process of application development, and also allow exposing the network
+functionality outside the internal network. (This is not possible with ZeroMQ
+because of some assertions in the code.) It will be connected to the database.
+
+The component facing the LDCs will speak ZeroMQ. During installation of an LDC, 
+it will ask for the server IP and the passphrase. It will then use these to
+register itself with the server. The server will respond with an API key that
+the LDC will have to use during all further communication to identify itself. It
+will also be connected to the database. 
+
+All messages passed over the Beanstalk queue and ZeroMQ will be serialized using
+MessagePack.
