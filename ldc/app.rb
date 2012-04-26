@@ -2,14 +2,37 @@
 require 'zmq'
 require 'msgpack'
 
-context = ZMQ::Context.new(1)
+class Reactor
+  def initialize(id)
+    $context ||= ZMQ::Context.new(1)
+    @responder = $context.socket(ZMQ::REP)
+    @responder.bind(id)
+  end
 
-responder = context.socket(ZMQ::REP)
-responder.bind("tcp://*:9861")
+  def deactivate
+    @responder.close
+  end
 
-loop do
-  request = MessagePack.unpack responder.recv
-  puts "Recieved request: [#{request.inspect}]"
-  sleep 1
-  responder.send("PONG".to_msgpack)
+  def handle_request(r)
+    if r == "PING"
+      return "PONG"
+    else
+      return "INVALID"
+    end
+  end
+
+  def run
+    loop do
+      request = MessagePack.unpack @responder.recv
+      @responder.send(handle_request(request).to_msgpack)
+    end
+  end
 end
+
+reactor = Reactor.new("tcp://*:9861")
+
+trap "INT" do
+  reactor.deactivate
+end
+
+reactor.run
