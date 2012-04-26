@@ -1,0 +1,6 @@
+---
+network_elements:
+  "10.6.2.254":
+    "sysDescr.0": 1
+  "10.6.1.254":
+    "sysDescr.0": 2
