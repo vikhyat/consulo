@@ -17,7 +17,7 @@ class LDC
   def ping(timeout=2)
     begin
       ret = false
-      Thread.new { ret = (send("PING") == "PONG") }.join(1)
+      Thread.new { ret = (send(["PING"]) == "PONG") }.join(1)
       return ret
     rescue
       return false

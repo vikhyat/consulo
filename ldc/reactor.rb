@@ -1,5 +1,6 @@
 require 'zmq'
 require 'msgpack'
+require_relative 'hopcount.rb'
 
 class Reactor
   def initialize(id)
@@ -13,9 +14,15 @@ class Reactor
   end
 
   def handle_request(r)
-    if r == "PING"
-      return "PONG"
-    else
+    begin
+      if r[0] == "PING"
+        return "PONG"
+      elsif r[0] == "HOPCOUNT"
+        return hopcount(r[1])
+      else
+        return "INVALID"
+      end
+    rescue
       return "INVALID"
     end
   end
