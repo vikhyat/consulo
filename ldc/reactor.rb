@@ -6,6 +6,7 @@ class Reactor
   def initialize(id)
     $context ||= ZMQ::Context.new(1)
     @responder = $context.socket(ZMQ::REP)
+    @responder.setsockopt(ZMQ::LINGER, 0)
     @responder.bind(id)
   end
 
