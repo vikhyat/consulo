@@ -7,5 +7,5 @@ trap "INT" do
 end
 
 p ldc.ping
-p ldc.send(["HOPCOUNT", "10.6.2.254"])
+p ldc.hopcount("10.6.2.254")
 ldc.deactivate

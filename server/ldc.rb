@@ -1,27 +1,33 @@
 require 'zmq'
 require 'msgpack'
-require 'timeout'
 
 class LDC
   def initialize(id)
     $context ||= ZMQ::Context.new(1)
     @requester = $context.socket(ZMQ::REQ)
+    @requester.setsockopt(ZMQ::LINGER, 0)
     @requester.connect(id)
   end
+  
+  def timeout(timeout=2)
+    ret = false
+    Thread.new { ret = yield }.join(timeout)
+    return ret
+  end
 
-  def send(cmd)
-    @requester.send cmd.to_msgpack
-    MessagePack.unpack @requester.recv
+  def send(cmd, timeout=2)
+    return timeout(timeout) do
+      @requester.send cmd.to_msgpack
+      MessagePack.unpack @requester.recv
+    end
   end
 
   def ping(timeout=2)
-    begin
-      ret = false
-      Thread.new { ret = (send(["PING"]) == "PONG") }.join(1)
-      return ret
-    rescue
-      return false
-    end
+    send(["PING"], timeout) == "PONG"
+  end
+  
+  def hopcount(ip, timeout=2)
+    send(["HOPCOUNT", ip], timeout)
   end
 
   def deactivate
