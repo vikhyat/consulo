@@ -31,8 +31,8 @@ class LDC
     send(["HOPCOUNT", ip], timeout)
   end
   
-  def track(ne, oid, timeout=2)
-    send(["TRACK", ne, oid], timeout)
+  def track(ne, oid, interval, timeout=2)
+    send(["TRACK", ne, oid, interval], timeout)
   end
   
   def tracked(timeout=2)

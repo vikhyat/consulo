@@ -16,4 +16,8 @@ class Poller
   def track(ne, oid, interval)
     send(["TRACK", ne, oid, interval])
   end
+  
+  def deactivate
+    @requester.close
+  end
 end

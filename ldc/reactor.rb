@@ -13,6 +13,7 @@ class Reactor
 
   def deactivate
     @responder.close
+    @poller.deactivate
   end
 
   def handle_request(r)
