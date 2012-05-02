@@ -10,9 +10,10 @@ class LDC
   end
   
   def timeout(timeout=2)
-    ret = false
-    Thread.new { ret = yield }.join(timeout)
-    return ret
+    yield
+    # ret = false
+    # Thread.new { ret = yield }.join(timeout)
+    # return ret
   end
 
   def send(cmd, timeout=2)
@@ -28,6 +29,14 @@ class LDC
   
   def hopcount(ip, timeout=2)
     send(["HOPCOUNT", ip], timeout)
+  end
+  
+  def track(ne, oid, timeout=2)
+    send(["TRACK", ne, oid], timeout)
+  end
+  
+  def tracked(timeout=2)
+    send(["TRACKED"], timeout)
   end
 
   def deactivate

@@ -3,11 +3,12 @@ require 'msgpack'
 require_relative 'hopcount.rb'
 
 class Reactor
-  def initialize(id)
+  def initialize(id, poller)
     $context ||= ZMQ::Context.new(1)
     @responder = $context.socket(ZMQ::REP)
     @responder.setsockopt(ZMQ::LINGER, 0)
     @responder.bind(id)
+    @poller = poller
   end
 
   def deactivate
@@ -20,6 +21,8 @@ class Reactor
         return "PONG"
       elsif r[0] == "HOPCOUNT"
         return hopcount(r[1])
+      elsif r[0] == "TRACK"
+        return @poller.track(r[1], r[2], r[3])
       else
         return "INVALID"
       end
@@ -31,6 +34,7 @@ class Reactor
   def run
     loop do
       request = MessagePack.unpack @responder.recv
+      puts "Got: #{request}"
       @responder.send(handle_request(request).to_msgpack)
     end
   end

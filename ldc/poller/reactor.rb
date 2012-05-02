@@ -21,6 +21,8 @@ class Reactor
         @tracked[r[1]] ||= {}
         @tracked[r[1]][r[2]] = r[3]
         return "ADDED"
+      elsif r[0] == "TRACKED"
+        return @tracked
       else
         return "INVALID"
       end
@@ -32,6 +34,7 @@ class Reactor
   def run
     loop do
       request = MessagePack.unpack @responder.recv
+      puts "Got: #{request}"
       @responder.send(handle_request(request).to_msgpack)
     end
   end
