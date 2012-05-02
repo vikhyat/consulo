@@ -24,6 +24,8 @@ class Reactor
         return hopcount(r[1])
       elsif r[0] == "TRACK"
         return @poller.track(r[1], r[2], r[3])
+      elsif r[0] == "TRACKED"
+        return @poller.tracked
       else
         return "INVALID"
       end

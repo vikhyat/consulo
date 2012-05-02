@@ -17,6 +17,10 @@ class Poller
     send(["TRACK", ne, oid, interval])
   end
   
+  def tracked
+    send(["TRACKED"])
+  end
+  
   def deactivate
     @requester.close
   end

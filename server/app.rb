@@ -59,4 +59,6 @@ CONFIG['network_elements'].each do |ne, oids|
   end
 end
 
+ldcs.each {|ldc| p ldc.tracked }
+
 ldcs.each {|ldc| ldc.deactivate }
