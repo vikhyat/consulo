@@ -7,6 +7,8 @@ class Reactor
     @responder = $context.socket(ZMQ::REP)
     @responder.setsockopt(ZMQ::LINGER, 0)
     @responder.bind(id)
+    # @tracked is a ne -> oid -> interval hash
+    @tracked = {}
   end
   
   def deactivate
@@ -14,7 +16,17 @@ class Reactor
   end
   
   def handle_request(r)
-    return "INVALID"
+    begin
+      if r[0] == "TRACK"
+        @tracked[r[1]] ||= {}
+        @tracked[r[1]][r[2]] = r[3]
+        return "ADDED"
+      else
+        return "INVALID"
+      end
+    rescue
+      return "INVALID"
+    end
   end
   
   def run

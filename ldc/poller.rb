@@ -5,4 +5,15 @@ class Poller
     @requester.setsockopt(ZMQ::LINGER, 0)
     @requester.connect(id)
   end
+  
+  def send(cmd, timeout=2)
+    return timeout(timeout) do
+      @requester.send cmd.to_msgpack
+      MessagePack.unpack @requester.recv
+    end
+  end
+  
+  def track(ne, oid, interval)
+    send(["TRACK", ne, oid, interval])
+  end
 end
