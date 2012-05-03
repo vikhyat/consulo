@@ -6,3 +6,5 @@ network_elements:
     "sysDescr.0": 1
   "10.6.1.254":
     "sysDescr.0": 2
+fetch_interval: 1
+reassign_interval: 1000
