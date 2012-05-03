@@ -21,6 +21,10 @@ class Poller
     send(["TRACKED"])
   end
   
+  def fetch
+    send(["FETCH"])
+  end
+  
   def deactivate
     @requester.close
   end

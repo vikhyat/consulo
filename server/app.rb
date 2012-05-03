@@ -59,6 +59,18 @@ CONFIG['network_elements'].each do |ne, oids|
   end
 end
 
-ldcs.each {|ldc| p ldc.tracked }
+values = []
 
-ldcs.each {|ldc| ldc.deactivate }
+Thread.new do
+  loop do
+    p values.length
+    ldcs.each do |ldc| 
+      f = ldc.fetch
+      f = [] if f == "INVALID"
+      values += f
+    end
+    sleep 1
+  end
+end.join
+
+# "04027626160"

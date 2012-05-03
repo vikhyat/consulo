@@ -12,3 +12,5 @@ trap "INT" do
 end
 
 reactor.run
+
+reactor.deactivate

@@ -38,6 +38,10 @@ class LDC
   def tracked(timeout=2)
     send(["TRACKED"], timeout)
   end
+  
+  def fetch(timeout=2)
+    send(["FETCH"], timeout)
+  end
 
   def deactivate
     @requester.close

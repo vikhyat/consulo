@@ -26,6 +26,8 @@ class Reactor
         return @poller.track(r[1], r[2], r[3])
       elsif r[0] == "TRACKED"
         return @poller.tracked
+      elsif r[0] == "FETCH"
+        return @poller.fetch
       else
         return "INVALID"
       end
