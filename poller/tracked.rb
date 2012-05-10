@@ -23,7 +23,11 @@ class Tracked
   
   def poll
     @t_start ||= Time.now
-    rand
+    if @oid == "status"
+      true
+    else
+      rand
+    end
   end
   
   def next_poll_time
