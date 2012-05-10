@@ -36,7 +36,7 @@ class Tracked
           output = vb.value.to_s
         end
       end
-      return output
+      return rand
     end
   end
   
