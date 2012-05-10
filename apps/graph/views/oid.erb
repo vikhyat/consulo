@@ -19,13 +19,16 @@
   <h3>OIDs</h3>
   <ul>
     <% oids.each do |oid| %>
+      <li>
       <% if variable == oid[0] %>
         <strong>
       <% end %>
-          <li><a href="/<%= element %>/<%= oid[0] %>">(<%= oid[1] %>) <%= oid[0] %></a></li>
+          <a href="/<%= element %>/<%= oid[0] %>">(<%= oid[1] %>) <%= oid[0] %></a>
       <% if variable == oid[0] %>
         </strong>
+        <em id="val"></em>
       <% end %>
+      </li>
     <% end %>
   </ul>
 </div>
@@ -51,6 +54,7 @@
   setInterval(function() {
     $.getJSON('/<%= element %>/<%= variable %>/latest', function (data) {
       line.append(new Date().getTime(), data[1]);
+      $("em#val").html(data[1] + "");
     });
   }, <%= oids[variable] * 1000 %>);
 

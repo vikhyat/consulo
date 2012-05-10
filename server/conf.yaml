@@ -4,10 +4,10 @@ ldcs:
   - tcp://10.6.2.217:9861
 network_elements:
   "10.6.2.254":
-    "sysDescr.0": 1
+    "ifOutOctets.1": 1
     "status": 1
   "10.6.1.254":
-    "sysDescr.0": 2
+    "ifOutOctets.1": 2
   "10.6.2.201":
     "status": 1
 fetch_interval: 1
