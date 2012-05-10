@@ -1,1 +1,1 @@
-port: 5439
+poller_address: ipc:///tmp/poller.ipc

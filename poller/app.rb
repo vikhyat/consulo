@@ -3,7 +3,7 @@ require 'yaml'
 
 CONFIG = YAML.load File.read('conf.yaml')
 
-reactor = Reactor.new("tcp://*:#{CONFIG['port']}")
+reactor = Reactor.new(CONFIG['poller_address'])
 
 trap "INT" do
   reactor.deactivate
