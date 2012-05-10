@@ -35,6 +35,10 @@ class LDC
     send(["TRACK", ne, oid, interval], timeout)
   end
   
+  def clear_tracks(timeout=2)
+    send(["CLEAR_TRACKS"], timeout)
+  end
+  
   def tracked(timeout=2)
     send(["TRACKED"], timeout)
   end

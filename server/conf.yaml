@@ -11,4 +11,4 @@ network_elements:
   "10.6.2.201":
     "status": 1
 fetch_interval: 1
-reassign_interval: 1000
+reassign_interval: 1

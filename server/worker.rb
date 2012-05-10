@@ -1,10 +1,10 @@
 require_relative 'helper.rb'
 
 # compute optimal ldc - network element assignment
-# Thread.new do
-  # loop do
+Thread.new do
+  loop do
     optimal_assignment = best_ldcs($ldcs, CONFIG['network_elements'].keys.uniq)
-
+    
     CONFIG['network_elements'].each do |ne, oids|
       oids.each do |oid, interval|
         if optimal_assignment[ne].nil?
@@ -14,9 +14,9 @@ require_relative 'helper.rb'
         end
       end
     end
-    # sleep CONFIG['reassign_interval']
-  # end
-# end
+    sleep CONFIG['reassign_interval']
+  end
+end
 
 Thread.new do  
   loop do

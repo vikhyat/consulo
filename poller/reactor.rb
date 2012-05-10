@@ -31,6 +31,8 @@ class Reactor
         values = []
         @tracked.map {|tracked| tracked.flush }.each {|vars| values += vars }
         return values
+      elsif r[0] == "CLEAR_TRACKS"
+        @tracked.clear
       else
         return "INVALID"
       end

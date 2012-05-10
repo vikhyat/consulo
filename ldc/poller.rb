@@ -25,6 +25,10 @@ class Poller
     send(["FETCH"])
   end
   
+  def clear_tracks
+    send(["CLEAR_TRACKS"])
+  end
+  
   def deactivate
     @requester.close
   end

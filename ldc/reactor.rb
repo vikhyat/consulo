@@ -28,6 +28,8 @@ class Reactor
         return @poller.tracked
       elsif r[0] == "FETCH"
         return @poller.fetch
+      elsif r[0] == "CLEAR_TRACKS"
+        return @poller.clear_tracks
       else
         return "INVALID"
       end
