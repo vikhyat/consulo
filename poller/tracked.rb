@@ -33,7 +33,7 @@ class Tracked
       SNMP::Manager.open(:host => @ne) do |manager|
         response = manager.get([@oid])
         response.each_varbind do |vb|
-          output = vb.value.to_s
+          output = vb.value
         end
       end
       return output
