@@ -1,0 +1,25 @@
+<div class="eight columns">
+  <h3>Network Elements</h3>
+  <ul>
+    <% network_elements.each do |ne| %>
+      <li>
+        <% if ne == element %>
+          <strong>
+        <% end %>
+            <a href="/<%= ne %>"><%= ne %></a>
+        <% if ne == element %>
+          </strong>
+        <% end %>
+      </li>
+    <% end %>
+  </ul>
+</div>
+
+<div class="eight columns">
+  <h3>OIDs</h3>
+  <ul>
+    <% oids.each do |oid| %>
+      <li><a href="/<%= element %>/<%= oid[0] %>">(<%= oid[1] %>) <%= oid[0] %></a></li>
+    <% end %>
+  </ul>
+</div>

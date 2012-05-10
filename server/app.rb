@@ -22,5 +22,3 @@ require_relative 'worker.rb'
 
 require 'sinatra'
 require_relative 'api.rb'
-
-# "04027626160"

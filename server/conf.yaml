@@ -8,5 +8,7 @@ network_elements:
     "status": 1
   "10.6.1.254":
     "sysDescr.0": 2
+  "10.6.2.201":
+    "status": 1
 fetch_interval: 1
 reassign_interval: 1000

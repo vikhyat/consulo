@@ -1,0 +1,59 @@
+<div class="eight columns">
+  <h3>Network Elements</h3>
+  <ul>
+    <% network_elements.each do |ne| %>
+      <li>
+        <% if ne == element %>
+          <strong>
+        <% end %>
+            <a href="/<%= ne %>"><%= ne %></a>
+        <% if ne == element %>
+          </strong>
+        <% end %>
+      </li>
+    <% end %>
+  </ul>
+</div>
+
+<div class="eight columns">
+  <h3>OIDs</h3>
+  <ul>
+    <% oids.each do |oid| %>
+      <% if variable == oid[0] %>
+        <strong>
+      <% end %>
+          <li><a href="/<%= element %>/<%= oid[0] %>">(<%= oid[1] %>) <%= oid[0] %></a></li>
+      <% if variable == oid[0] %>
+        </strong>
+      <% end %>
+    <% end %>
+  </ul>
+</div>
+
+<hr />
+
+<div class="sixteen columns">
+  <canvas id="mycanvas" width="940" height="250"></canvas>
+</div>
+
+<script>
+  var smoothie = new SmoothieChart();
+  var smoothie = new SmoothieChart({
+    grid: { strokeStyle:'rgb(200, 200, 200)', fillStyle:'rgb(240, 240, 240)',
+            lineWidth: 1, millisPerLine: 1000, verticalSections: 4, },
+    labels: { fillStyle:'rgb(100, 100, 100)' }
+  });
+  smoothie.streamTo(document.getElementById("mycanvas"), <%= oids[variable] * 1000 %> );
+  // Data
+  var line = new TimeSeries();
+
+  // Add a random value to each line every second
+  setInterval(function() {
+    $.getJSON('/<%= element %>/<%= variable %>/latest', function (data) {
+      line.append(new Date().getTime(), data[1]);
+    });
+  }, <%= oids[variable] * 1000 %>);
+
+  // Add to SmoothieChart
+  smoothie.addTimeSeries(line, { strokeStyle:'rgb(0, 0, 255)', fillStyle:'rgba(0, 0, 255, 0.1)', lineWidth:2 });
+</script>
