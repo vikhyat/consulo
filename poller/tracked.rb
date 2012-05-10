@@ -30,13 +30,13 @@ class Tracked
       ping(@ne)
     else
       output = nil
-      # SNMP::Manager.open(:host => host) do |manager|
-      #         response = manager.get([@oid])
-      #         response.each_varbind do |vb|
-      #           output = vb.value
-      #         end
-      #       end
-      return rand
+      SNMP::Manager.open(:host => @ne) do |manager|
+        response = manager.get([@oid])
+        response.each_varbind do |vb|
+          output = vb.value
+        end
+      end
+      return output
     end
   end
   
