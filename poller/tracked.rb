@@ -1,3 +1,5 @@
+require_relative 'ping.rb'
+
 class Tracked
   attr_reader :ne, :oid, :interval
   
@@ -24,7 +26,7 @@ class Tracked
   def poll
     @t_start ||= Time.now
     if @oid == "status"
-      true
+      ping(@ne)
     else
       rand
     end
