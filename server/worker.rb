@@ -18,9 +18,11 @@ end
 
 def fetch
   $ldcs.each do |ldc|
-    f = ldc.fetch
-    f = [] if f == "INVALID"
-    $data.save f
+    Thread.new do
+      f = ldc.fetch
+      f = [] if f == "INVALID"
+      $data.save f
+    end
   end
 end
 

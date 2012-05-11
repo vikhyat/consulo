@@ -20,12 +20,21 @@
   <ul>
     <% oids.each do |oid| %>
       <li>
-      <% if variable == oid[0] %>
+      <% if variable == oid[0] and not rate %>
         <strong>
       <% end %>
           <a href="/<%= element %>/<%= oid[0] %>">(<%= oid[1] %>) <%= oid[0] %></a>
       <% if variable == oid[0] %>
-        </strong>
+        <% if not rate %>
+          </strong>
+        <% end %>
+        <% if rate %>
+          <strong>
+        <% end %>
+            <a href="/<%= element %>/<%= oid[0] %>/rate">(rate)</a>
+        <% if rate %>
+          </strong>
+        <% end %>
         <em id="val"></em>
       <% end %>
       </li>
@@ -44,17 +53,32 @@
   var smoothie = new SmoothieChart({
     grid: { strokeStyle:'rgb(200, 200, 200)', fillStyle:'rgb(240, 240, 240)',
             lineWidth: 1, millisPerLine: 1000, verticalSections: 4, },
-    labels: { fillStyle:'rgb(100, 100, 100)' }
+    labels: { fillStyle:'rgb(100, 100, 100)', },
+    <% if rate %>
+    millisPerPixel: 80, 
+    <% end %>
   });
   smoothie.streamTo(document.getElementById("mycanvas"), <%= oids[variable] * 1000 %> );
   // Data
   var line = new TimeSeries();
+  var last = "sentinel";
+  var ticks = 1;
 
   // Add a random value to each line every second
   setInterval(function() {
     $.getJSON('/<%= element %>/<%= variable %>/latest', function (data) {
-      line.append(new Date().getTime(), data[1]);
-      $("em#val").html(data[1] + "");
+      <% if rate %>
+        if ((last != data[1]) && (last != "sentinel")) {
+          line.append(new Date().getTime(), (data[1] - last) * 1.0 / (<%= oids[variable] %> * ticks));
+          ticks = 1;
+          $("em#val").html(data[1] + "");
+        }
+        else { ticks += 1; }
+        last = data[1];
+      <% else %>
+        line.append(new Date().getTime(), data[1]);
+        $("em#val").html(data[1] + "");
+      <% end %>
     });
   }, <%= oids[variable] * 1000 %>);
 

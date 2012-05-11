@@ -31,7 +31,11 @@ get '/:ne' do
 end
 
 get '/:ne/:oid' do
-  erb :oid, :locals => {element: params[:ne], variable: params[:oid], network_elements: network_elements, oids: oids(params[:ne])}
+  erb :oid, :locals => {element: params[:ne], variable: params[:oid], network_elements: network_elements, oids: oids(params[:ne]), rate: false}
+end
+
+get '/:ne/:oid/rate' do
+  erb :oid, :locals => {element: params[:ne], variable: params[:oid], network_elements: network_elements, oids: oids(params[:ne]), rate: true}
 end
 
 get '/:ne/:oid/latest' do
