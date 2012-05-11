@@ -1,9 +1,11 @@
 require 'zmq'
 require 'msgpack'
+require 'thread'
 
 class LDC
   def initialize(id)
     $context ||= ZMQ::Context.new(1)
+    @semaphore = Mutex.new
     @requester = $context.socket(ZMQ::REQ)
     @requester.setsockopt(ZMQ::LINGER, 0)
     @requester.connect(id)
@@ -17,7 +19,7 @@ class LDC
   end
 
   def send(cmd, timeout=2)
-    return timeout(timeout) do
+    @semaphore.synchronize do
       @requester.send cmd.to_msgpack
       MessagePack.unpack @requester.recv
     end
