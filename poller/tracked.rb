@@ -1,4 +1,5 @@
 require_relative 'ping.rb'
+require_relative 'adaptive.rb'
 require 'snmp'
 
 class Tracked
@@ -8,6 +9,7 @@ class Tracked
     @ne = ne
     @oid = oid
     @interval = interval
+    @adaptive = AdaptivePolling.new('double') if @interval == "adaptive"
     @active = true
     @values = []
   end
@@ -30,26 +32,36 @@ class Tracked
       ping(@ne)
     else
       output = nil
-      SNMP::Manager.open(:host => @ne) do |manager|
-        response = manager.get([@oid])
-        response.each_varbind do |vb|
-          output = vb.value.to_s
+      begin
+        SNMP::Manager.open(:host => @ne) do |manager|
+          response = manager.get([@oid])
+          response.each_varbind do |vb|
+            output = vb.value.to_s
+          end
         end
+      rescue
+      end
+      if @interval == 'adaptive'
+        @adaptive.register(output)
       end
       return output
     end
   end
   
-  def next_poll_time
-    k = 1 + (Time.now - @t_start) / @interval
-    @t_start + k * @interval
+  def wait_time
+    if @interval == "adaptive"
+      p @adaptive.wait_time
+    else
+      k = 1 + (Time.now - @t_start) / @interval
+      @t_start + k * @interval - Time.now
+    end
   end
   
   def poll_loop
     Thread.new do
       while @active
         @values.push [poll, @oid, @ne, Time.now.to_i].reverse
-        sleep (next_poll_time - Time.now)
+        sleep wait_time
       end
     end
   end

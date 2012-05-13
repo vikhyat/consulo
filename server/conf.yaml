@@ -1,7 +1,7 @@
 ---
 ldcs:
-  # - tcp://localhost:9861
-  - tcp://10.6.2.217:9861
+  - tcp://localhost:9861
+  # - tcp://10.6.2.217:9861
 network_elements:
   "10.6.2.254":
     "ifOutOctets.1": 1
@@ -10,11 +10,7 @@ network_elements:
     "status": 1
   "10.6.1.254":
     "ifOutOctets.1": 2
-    "ifOutOctets.2": 1
+    "ifOutOctets.2": "adaptive"
     "ifOutOctets.3": 1
-  "10.6.2.201":
-    "status": 1
-  "10.6.2.216":
-    "status": 1
 fetch_interval: 1
-reassign_interval: 5
+reassign_interval: 60

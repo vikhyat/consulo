@@ -21,6 +21,7 @@ class Reactor
   def handle_request(r)
     begin
       if r[0] == "TRACK"
+        p r
         tracked = Tracked.new(r[1], r[2], r[3])
         @tracked.push tracked if not @tracked.include? tracked
         tracked.poll_loop

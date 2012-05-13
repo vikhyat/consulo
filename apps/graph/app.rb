@@ -11,7 +11,11 @@ def network_elements
 end
 
 def oids(ne)
-  JSON.parse open(API + ne).read
+  t = JSON.parse open(API + ne).read
+  t.keys.each do |k|
+    t[k] = 1 if t[k] == "adaptive"
+  end
+  t
 end
 
 def values(ne, oid)
