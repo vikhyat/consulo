@@ -38,12 +38,14 @@ class Datastore
   
   def savev(value)
     @semaphore.synchronize do
-      # get the table name
-      name = table_name(value)
-      # make sure the table exists
-      @dbh.execute("CREATE TABLE IF NOT EXISTS #{name} (timestamp INTEGER, ne VARCHAR(15), oid VARCHAR(50), value VARCHAR(50));")
-      # insert into table
-      @dbh.execute("INSERT INTO #{name} (timestamp, ne, oid, value) VALUES (#{value[0]}, #{value[1].inspect}, #{value[2].inspect}, #{value[3].to_msgpack.inspect});")
+      if not value[-1].nil?
+        # get the table name
+        name = table_name(value)
+        # make sure the table exists
+        @dbh.execute("CREATE TABLE IF NOT EXISTS #{name} (timestamp INTEGER, ne VARCHAR(15), oid VARCHAR(50), value VARCHAR(50));")
+        # insert into table
+        @dbh.execute("INSERT INTO #{name} (timestamp, ne, oid, value) VALUES (#{value[0]}, #{value[1].inspect}, #{value[2].inspect}, #{value[3].to_msgpack.inspect});")
+      end
     end
   end
 end

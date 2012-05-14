@@ -2,7 +2,7 @@
 \lyxformat 413
 \begin_document
 \begin_header
-\textclass article
+\textclass scrartcl
 \use_default_options true
 \maintain_unincluded_children false
 \language english
@@ -25,14 +25,15 @@
 \bibtex_command default
 \index_command default
 \paperfontsize default
+\spacing single
 \use_hyperref false
 \papersize default
-\use_geometry false
+\use_geometry true
 \use_amsmath 1
 \use_esint 1
 \use_mhchem 1
 \use_mathdots 1
-\cite_engine basic
+\cite_engine natbib_authoryear
 \use_bibtopic false
 \use_indices false
 \paperorientation portrait
@@ -60,7 +61,7 @@
 \begin_body
 
 \begin_layout Title
-Consulo: A 2 Tier Application-Oriented SNMP Poll Manager
+Consulo: A 2-Tier SNMP Poll Manager
 \end_layout
 
 \begin_layout Author
@@ -72,7 +73,7 @@ Uday Mittal (B09074)
 \begin_inset Newline newline
 \end_inset
 
-Dhruv Parmar(B09057)
+Dhruv Parmar (B09057)
 \end_layout
 
 \begin_layout Standard
@@ -84,16 +85,30 @@ LatexCommand tableofcontents
 
 \end_layout
 
+\begin_layout Standard
+\begin_inset Newpage newpage
+\end_inset
+
+
+\end_layout
+
 \begin_layout Section
-Requirements
+Features
 \end_layout
 
 \begin_layout Itemize
-The ability to poll for many OIDs, each with its own polling interval.
+A convenient RESTful API to make it easier to write applications that use
+ the Poll Manager.
 \end_layout
 
 \begin_layout Itemize
-Customizable polling interval, fixed or adapting to the rate of change.
+Automatic assignment of Network Elements to Low-level Data Collectors (LDCs)
+ to simplify configuration.
+\end_layout
+
+\begin_layout Itemize
+Supports adaptive polling, in which the rate of polling automatically adapts
+ to how the variable changes.
 \end_layout
 
 \begin_layout Section
@@ -101,7 +116,767 @@ Design
 \end_layout
 
 \begin_layout Subsection
+Description
+\end_layout
+
+\begin_layout Standard
+The Poll Manager consists of three components: a poll server, a LDC API
+ layer and a poller.
+ The Network Administrator will configure the poll server by giving it details
+ of all of the LDCs and the set of network elements, OIDs and interval of
+ the variables to be polled.
+ When the server application is run, it reads all of the configuration variables
+ and assigns network elements to LDCs automatically on the basis of the
+ hopcount.
+ This helps in reducing the amount of configuration work that the network
+ administrator needs to do.
+\end_layout
+
+\begin_layout Standard
+Each LDC consists of two major components: the LDC API and the Poller.
+ The LDC API handles computing the hopcount, and forwards all other requests
+ to the Poller.
+ The Poller and LDC API communicate using IPC (Inter-process communication),
+ and the LDC API and Poll Server communicate over TCP by default.
+ The communication is protocol-agnostic, and can be changed to Inproc, IPC,
+ TCP, PGM or EPGM (encapsulated PGM, in which PGM packets are wrapped into
+ UDP packets to make it more administrator-friendly).
+\end_layout
+
+\begin_layout Standard
+The Poll Server periodically reads data from the LDCs and saves it to a
+ database.
+ The database defaults to in-memory SQLite3, but database access is abstracted
+ away and in order to switch to a different database backend one only needs
+ to install the appropriate database drivers.
+ Drivers for PostgreSQL and MySQL are provided for the database abstraction
+ library we used in addition to the SQLite3 drivers.
+\end_layout
+
+\begin_layout Standard
+In addition to saving values to a database, the Poll Server also provides
+ a RESTful HTTP API to help simplify the implementation of some basic applicatio
+ns that don't need to perform advanced queries.
+\end_layout
+
+\begin_layout Subsection
 Block Diagram
+\end_layout
+
+\begin_layout Subsection
+Configuration, Communication and Serialization
+\end_layout
+
+\begin_layout Standard
+All configuration is done using the YAML format.
+ YAML is a straightforward machine parsable data serialization format designed
+ for human readability and interaction with scripting languages.
+ YAML was chosen over XML and JSON because it more easily read and written
+ by humans.
+\end_layout
+
+\begin_layout Standard
+For communication between the various components (with the exception of
+ the HTTP API provided by the Poll Server), Consulo uses a messaging system,
+ or "message-oriented middleware" called ZeroMQ.
+ It is used in environments as diverse as financial services, game development,
+ embedded systems, academic research and aerospace.
+ ØMQ was originally conceived as an ultra-fast messaging system for stock
+ trading and so the focus was on extreme optimization.
+ Later on during the development, the focus shifted to providing a generic
+ system for building distributed applications and supporting arbitrary messaging
+ patterns, various transport mechanisms, arbitrary language bindings, etc.
+ 
+\end_layout
+
+\begin_layout Standard
+ZeroMQ is a messaging system, and doesn't provide serialization and unserializat
+ion of data before and after transmission.
+ For this purpose (across the application and even in the database) we use
+ MessagePack, which is a binary-based efficient object serialization library
+ that enables the exchange structured objects between many languages.
+ All commands transmitted between the components are actually string arrays.
+ The first (mandatory) element is the name of the command, and may be followed
+ by parameters which are required for some of the commands.
+\end_layout
+
+\begin_layout Subsection
+Database
+\end_layout
+
+\begin_layout Standard
+Database access by the Polling Server is completely abstracted away by the
+ Datastore class, which in turn uses 
+\begin_inset Quotes eld
+\end_inset
+
+rdbi
+\begin_inset Quotes erd
+\end_inset
+
+ to connect to the server.
+ A database table is used for the data collected each day, and this table
+ is named in the format 
+\begin_inset Quotes eld
+\end_inset
+
+data_for_%Y_%m_%d
+\begin_inset Quotes erd
+\end_inset
+
+.
+ Each of these tables have the same schema: the columns are the UNIX timestamp,
+ network element (IP address), OID and value.
+ Before saving the value is serialized using MessagePack so that it can
+ be unserialized to the original value after reading it from the database.
+ 
+\end_layout
+
+\begin_layout Standard
+By default an in-memory SQLite3 database is used because this is the most
+ convenient for development and testing.
+ In a production environment this should be changed to MySQL or PostgreSQL,
+ or atleast an SQLite3 database which is saved to a file.
+ This is fairly straightforward to do and only involves changing the database
+ driver being used.
+\end_layout
+
+\begin_layout Subsection
+Design of the Components
+\end_layout
+
+\begin_layout Standard
+The Poll Server primarily consists of two parts: the HTTP API and a worker.
+ Internally the worker consists of 3 threads, two for regularly adding the
+ tasks of reassigning NEs to LDCs and fetching values from the LDCs to a
+ queue and one for actually executing the tasks.
+ As it fetches the values from LDCs, the worker thread saves these to the
+ Datastore.
+ The HTTP API simply reads from the API.
+ In order to add or remove LDCs or NEs/OIDs, a network administrator needs
+ to edit the configuration file in the Poll Server.
+\end_layout
+
+\begin_layout Standard
+The Poll Server may send the following commands to an LDC:
+\end_layout
+
+\begin_layout Itemize
+[
+\begin_inset Quotes eld
+\end_inset
+
+PING
+\begin_inset Quotes erd
+\end_inset
+
+] -- used for checking whether an LDC is up or not.
+\end_layout
+
+\begin_layout Itemize
+[
+\begin_inset Quotes eld
+\end_inset
+
+HOPCOUNT
+\begin_inset Quotes erd
+\end_inset
+
+, IP] -- get the hopcount to the specified IP address.
+\end_layout
+
+\begin_layout Itemize
+[
+\begin_inset Quotes eld
+\end_inset
+
+TRACK
+\begin_inset Quotes erd
+\end_inset
+
+, NE, OID, INTERVAL] -- start tracking the specified NE/OID using the given
+ interval.
+\end_layout
+
+\begin_layout Itemize
+[
+\begin_inset Quotes eld
+\end_inset
+
+CLEAR_TRACKS
+\begin_inset Quotes erd
+\end_inset
+
+] -- stop tracking all previously assigned variables.
+\end_layout
+
+\begin_layout Itemize
+[
+\begin_inset Quotes eld
+\end_inset
+
+TRACKED
+\begin_inset Quotes erd
+\end_inset
+
+] -- return a list of tracked variables.
+\end_layout
+
+\begin_layout Itemize
+[
+\begin_inset Quotes eld
+\end_inset
+
+FETCH
+\begin_inset Quotes erd
+\end_inset
+
+] -- return all the new readings since the last time this command was sent.
+\end_layout
+
+\begin_layout Standard
+Of these commands, all but the first two are directly forwarded to the Poller
+ by the LDC API.
+ 
+\end_layout
+
+\begin_layout Standard
+The Poller and LDC API use the reactor pattern without the Synchronous Event
+ Demultiplexer.
+ The Poller creates a new 
+\begin_inset Quotes eld
+\end_inset
+
+Tracked
+\begin_inset Quotes erd
+\end_inset
+
+ object for each of the variables it tracks.
+ Each 
+\begin_inset Quotes eld
+\end_inset
+
+Tracked
+\begin_inset Quotes erd
+\end_inset
+
+ object is associated with a thread (This will create problems if there
+ are a very large number of variables to be tracked.
+ It would be wise to use a queue and worker threads-approach similar to
+ the one used in the Poll Server.)
+\end_layout
+
+\begin_layout Standard
+The Poller uses a load sensitive polling algorithm which performs the poll
+ at the next scheduled time if the server ever gets overloaded, causing
+ the time taken to perform a poll to exceed the polling interval.
+\end_layout
+
+\begin_layout Section
+Adaptive Polling
+\end_layout
+
+\begin_layout Standard
+A single exponential smoothing based forecasting formula, known as EWMA
+ (Exponentially Weighted Moving Average), has a basic recursive equation
+ of the form,
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+S_{t+1}=\alpha y_{t}+(1-\alpha)S_{t}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where 
+\begin_inset Formula $S_{t+1}$
+\end_inset
+
+ is the next step estimate, 
+\begin_inset Formula $S_{t}$
+\end_inset
+
+ is the running EWMA and 
+\begin_inset Formula $y_{t}$
+\end_inset
+
+ is the latest reading.
+ 
+\end_layout
+
+\begin_layout Standard
+The single exponential smoothing does not work well with datasets that exhibit
+ trends.
+ Hence, we consider EDS (Exponential Double Smoothing) which uses a second
+ smoothing parameter 
+\begin_inset Formula $\beta$
+\end_inset
+
+ for dealing with linear trends, which must be chosen in conjunction with
+ 
+\begin_inset Formula $\alpha$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+S_{t+1}=\alpha y_{t+1}+(1-\alpha)(S_{t}+b_{t})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+b_{t+1}=\beta(S_{t+1}-S_{t})+(1-\beta)b_{t}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The first equation adjusts the smoothed parameter from the trend 
+\begin_inset Formula $b_{t}$
+\end_inset
+
+ and the estimate of the previous period 
+\begin_inset Formula $S_{t}$
+\end_inset
+
+.
+ The next equation then updates the trend as the difference between the
+ last two estimates.
+ This form of EDS is Holt’s method.
+\end_layout
+
+\begin_layout Standard
+Holt's method assumes regular data sampling intervals and so, in order to
+ perform adaptive sampling, we need to adopt a modification of EDS using
+ Wright’s extension.
+ However we found that in practice this is not necessary because Holt's
+ method works well enough.
+\end_layout
+
+\begin_layout Standard
+The basic algorithm used for adaptive sampling is as follows:
+\end_layout
+
+\begin_layout Enumerate
+Read the next value.
+\end_layout
+
+\begin_layout Enumerate
+Compare it with the forecasted value, if the difference is within a factor
+ of 
+\begin_inset Formula $\delta$
+\end_inset
+
+ increase the poll delay by a factor of 1.1, otherwise halve the poll delay.
+\end_layout
+
+\begin_layout Enumerate
+Update the next forecast value using the value read in.
+\end_layout
+
+\begin_layout Enumerate
+Wait for the amount of time specified by the new poll delay.
+\end_layout
+
+\begin_layout Enumerate
+Go to step 1.
+\end_layout
+
+\begin_layout Standard
+Below are some graphs that depict simulations of adaptive polling using
+ both EWMA and Holt's method for different types of data and different parameter
+s.
+ The red line is the true value of the function, the blue diamonds are the
+ samples and the blue lines are the result of linear interpolation between
+ the samples.
+\end_layout
+
+\begin_layout Subsection
+EWMA 
+\end_layout
+
+\begin_layout Subsubsection
+\begin_inset Formula $\alpha=0.6$
+\end_inset
+
+, 
+\begin_inset Formula $\delta=1$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename images/ewma-constant-0.6.png
+	width 65page%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename images/ewma-linear-0.6.png
+	width 65page%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename images/ewma-sine-0.6.png
+	width 65page%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+\begin_inset Formula $\alpha=0.8$
+\end_inset
+
+, 
+\begin_inset Formula $\delta=1$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename images/ewma-constant-0.8.png
+	width 65page%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename images/ewma-linear-0.8.png
+	width 65page%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename images/ewma-sine-0.8.png
+	width 65page%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+\begin_inset Formula $\alpha=0.9$
+\end_inset
+
+, 
+\begin_inset Formula $\delta=1$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename images/ewma-constant-0.9.png
+	width 65page%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename images/ewma-linear-0.9.png
+	width 65page%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename images/ewma-sine-0.9.png
+	width 65page%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Holt's Method
+\end_layout
+
+\begin_layout Subsubsection
+\begin_inset Formula $\alpha=0.6$
+\end_inset
+
+, 
+\begin_inset Formula $\beta=0.6$
+\end_inset
+
+, 
+\begin_inset Formula $\delta=1$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename images/eds-constant-0.6-0.6.png
+	height 30pheight%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename images/eds-linear-0.6-0.6.png
+	height 30pheight%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename images/eds-sin-0.6-0.6.png
+	height 30pheight%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+\begin_inset Formula $\alpha=0.8$
+\end_inset
+
+, 
+\begin_inset Formula $\beta=0.6$
+\end_inset
+
+, 
+\begin_inset Formula $\delta=1$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename images/eds-constant-0.8-0.6.png
+	height 30pheight%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename images/eds-linear-0.8-0.6.png
+	height 30pheight%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename images/eds-sin-0.8-0.6.png
+	height 30pheight%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+\begin_inset Formula $\alpha=0.8$
+\end_inset
+
+, 
+\begin_inset Formula $\beta=0.8$
+\end_inset
+
+, 
+\begin_inset Formula $\delta=1$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename images/eds-constant-0.8-0.8.png
+	height 30pheight%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename images/eds-linear-0.8-0.8.png
+	height 30pheight%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename images/eds-sin-0.8-0.8.png
+	height 30pheight%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Sample Application: Real Time Grapher
+\end_layout
+
+\begin_layout Standard
+As an example of how to use the REST API provided by the Poll Server, we
+ have included a simple sample application which graphs the values of the
+ variables supplied in realtime.
+ 
+\end_layout
+
+\begin_layout Standard
+The application is written using the 
+\begin_inset Quotes eld
+\end_inset
+
+Sinatra
+\begin_inset Quotes erd
+\end_inset
+
+ micro-framework, which is basically a DSL for quickly creating web applications
+ in Ruby with minimal effort.
+ The core logic is under 40 lines of code.
+ The amount of code written for markup and styling is much larger than this.
+\end_layout
+
+\begin_layout Standard
+Accessing the root webpage when the application is running will give a list
+ of all of the network elements being tracked.
+ Clicking on a network element will give a list of all of the OIDs tracked
+ for that network element.
+ Clicking on an OID will draw a real-time graph of that variable if it is
+ a boolean or numeric quantity.
+\end_layout
+
+\begin_layout Standard
+For drawing the realtime graph without reloading the page we use AJAX (Asynchron
+ous Javascript and XML) to transmit JSON (Javascript Object Notation) encoded
+ objects to the browser from the server.
+\end_layout
+
+\begin_layout Section
+Citations
+\end_layout
+
+\begin_layout Enumerate
+Chapter 5 of Roy Fielding's doctoral dissertation, in which he introduces
+ and defines the term 
+\begin_inset Quotes eld
+\end_inset
+
+representational state transfer
+\begin_inset Quotes erd
+\end_inset
+
+ or REST.
+ 
+\begin_inset Newline newline
+\end_inset
+
+(http://www.ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm)
+\end_layout
+
+\begin_layout Enumerate
+ZeroMQ Chapter by Martin Sústrik from 
+\begin_inset Quotes eld
+\end_inset
+
+The Architecture of Open Source Applications Volume II: Structure, Scale
+ and a Few More Fearless Hacks
+\begin_inset Quotes erd
+\end_inset
+
+.
+ 
+\begin_inset Newline newline
+\end_inset
+
+(http://www.aosabook.org/en/zeromq.html)
+\end_layout
+
+\begin_layout Enumerate
+The Official YAML Website.
+ (http://yaml.org/)
+\end_layout
+
+\begin_layout Enumerate
+The MessagePack Project Website.
+ (http://msgpack.org/)
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Quotes eld
+\end_inset
+
+Design and Evaluation of an Adaptive Sampling Strategy for a Wireless Air
+ Pollution Sensor Network
+\begin_inset Quotes erd
+\end_inset
+
+ by Manik Gupta, Lamling Venus Shum, Eliane Bodanese, Stephen Hailes.
 \end_layout
 
 \end_body

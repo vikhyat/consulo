@@ -65,4 +65,11 @@ function plot_output(A)
   plot(A(1,:), A(2,:), 'bd-');
 endfunction
 
-plot_output(adaptive_polling_single(2, 30, 0.8, 1))
+function y=avg_error(predictions)
+  range = linspace(0, max(predictions(1, :)), 100)
+  error = 0
+  for i = range
+    error = error + abs(f(i) - interpln(predictions, [i]))
+  end;
+  y = error / length(range)
+endfunction
